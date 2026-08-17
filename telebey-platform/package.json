@@ -1,0 +1,13 @@
+{
+  "name": "telebey-platform-root",
+  "version": "1.0.0",
+  "description": "Root orchestrator for Telebey Mobile Platform",
+  "scripts": {
+    "infra": "docker-compose up -d",
+    "web": "npm run dev --prefix apps/telebey-web",
+    "api:dev": "npm run start:dev --prefix apps/api",
+    "dev": "docker-compose up -d && npx -y concurrently \"npm run dev --prefix apps/telebey-web\" \"npm run dev --prefix apps/telebey-dashboard\"",
+    "stop": "docker-compose down"
+  },
+  "devDependencies": {}
+}

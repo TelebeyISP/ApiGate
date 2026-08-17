@@ -1,0 +1,99 @@
+version: '3.9'
+
+# ─── Named Volumes ─────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ─── Network ───────────────────────────────────────────────────────────────────
+networks:
+  telebey-network:
+    driver: bridge
+
+# ─── Services ──────────────────────────────────────────────────────────────────
+services:
+
+  # ─── PostgreSQL 15 ──────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: telebey_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-telebey}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB:       ${POSTGRES_DB:-telebey_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - telebey-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-telebey} -d ${POSTGRES_DB:-telebey_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ─── Redis 7 ────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: telebey_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redispass}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - telebey-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redispass}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ─── NestJS API ─────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: runner
+    container_name: telebey_api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV:            production
+      PORT:                ${PORT:-4000}
+      DATABASE_URL:        ${DATABASE_URL:-postgresql://telebey:password@postgres:5432/telebey_db}
+      DB_HOST:             postgres
+      DB_PORT:             5432
+      DB_USER:             ${POSTGRES_USER:-telebey}
+      DB_PASSWORD:         ${POSTGRES_PASSWORD:-password}
+      DB_NAME:             ${POSTGRES_DB:-telebey_db}
+      REDIS_HOST:          redis
+      REDIS_PORT:          6379
+      REDIS_PASSWORD:      ${REDIS_PASSWORD:-redispass}
+      JWT_ACCESS_SECRET:   ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET:  ${JWT_REFRESH_SECRET}
+      ENCRYPTION_KEY:      ${ENCRYPTION_KEY}
+    ports:
+      - "${PORT:-4000}:4000"
+    networks:
+      - telebey-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

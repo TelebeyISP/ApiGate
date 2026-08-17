@@ -1,0 +1,9 @@
+{
+  "shop": {
+    "language": "en",
+    "currency": "USD"
+  },
+  "system": {
+    "theme": "sample"
+  }
+}
