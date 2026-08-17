@@ -149,8 +149,8 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Returns the authenticated user payload from the JWT' })
+  @ApiOperation({ summary: 'Returns the authenticated user profile' })
   me(@Req() req: any) {
-    return { user: req.user };
+    return this.authService.getProfile(req.user.sub);
   }
 }

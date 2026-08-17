@@ -1,7 +1,9 @@
-version: '3.8'
+version: "3.8"
+
+# Telebey ApiGate + isp.router-dashboard (Open5GS WebUI) stack
+# Shared MongoDB is the Open5GS subscriber store used by both repos.
 
 services:
-  # Frontend: Next.js App
   frontend:
     build:
       context: ./telebey-platform/apps/telebey-dashboard
@@ -9,19 +11,13 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost/api
+      - NEXT_PUBLIC_API_URL=http://localhost:4000
     depends_on:
       - backend-api
-    restart: always
+    restart: unless-stopped
     networks:
       - telebey-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
 
-  # Backend: NestJS API
   backend-api:
     build:
       context: ./telebey-platform/apps/api
@@ -29,29 +25,31 @@ services:
     ports:
       - "4000:4000"
     environment:
+      - PORT=4000
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USERNAME=telebey_user
+      - DB_USER=telebey_user
       - DB_PASSWORD=telebey_pass
       - DB_NAME=telebey_db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - OPEN5GS_MONGODB_URI=mongodb://mongo:27017/nextgepc
+      - JWT_ACCESS_SECRET=dev_access_secret_change_me
+      - JWT_REFRESH_SECRET=dev_refresh_secret_change_me
+      - OPEN5GS_MONGODB_URI=mongodb://mongo:27017/open5gs
+      - OPEN5GS_WEBUI_URL=http://open5gs-webui:9999
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    restart: always
+      mongo:
+        condition: service_started
+    restart: unless-stopped
     networks:
       - telebey-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
 
-  # Database: PostgreSQL
   postgres:
     image: postgres:15-alpine
     environment:
@@ -71,7 +69,6 @@ services:
     networks:
       - telebey-network
 
-  # Cache: Redis
   redis:
     image: redis:7-alpine
     ports:
@@ -84,31 +81,45 @@ services:
     networks:
       - telebey-network
 
-  # Telecom Core: Open5GS (Scaffolded service)
-  open5gs:
-    image: open5gs/open5gs:latest
-    volumes:
-      - ./open5gs/config:/open5gs/install/etc/open5gs
-    depends_on:
-      - mongo
-    networks:
-      - telebey-network
-    restart: always
-
-  # Open5GS Data: MongoDB
   mongo:
-    image: mongo:latest
+    image: mongo:7
+    ports:
+      - "27017:27017"
     volumes:
       - mongodb-data:/data/db
+      - ./integrations/isp-router-dashboard/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     networks:
       - telebey-network
 
-  # Reverse Proxy: NGINX
+  open5gs-webui:
+    build:
+      context: https://github.com/TelebeyISP/isp.router-dashboard.git#main
+      dockerfile: docker/webui/Dockerfile
+    ports:
+      - "9999:9999"
+    environment:
+      - DB_URI=mongodb://mongo/open5gs
+      - WAIT_HOSTS=mongo:27017
+      - HOSTNAME=0.0.0.0
+      - PORT=9999
+      - APIGATE_URL=http://backend-api:4000
+      - JWT_SECRET_KEY=open5gs_webui_jwt_dev
+      - SECRET_KEY=open5gs_webui_session_dev
+    volumes:
+      - ./integrations/isp-router-dashboard/webui/server/index.js:/usr/src/open5gs/webui/server/index.js:ro
+      - ./integrations/isp-router-dashboard/webui/server/routes/apigate.js:/usr/src/open5gs/webui/server/routes/apigate.js:ro
+      - ./integrations/isp-router-dashboard/webui/server/routes/index.js:/usr/src/open5gs/webui/server/routes/index.js:ro
+    depends_on:
+      - mongo
+      - backend-api
+    restart: unless-stopped
+    networks:
+      - telebey-network
+
   nginx:
     image: nginx:alpine
     ports:
       - "80:80"
-      - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:

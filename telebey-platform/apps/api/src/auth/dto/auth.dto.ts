@@ -44,8 +44,8 @@ export class LoginDto {
 // ─── Refresh ──────────────────────────────────────────────────────────────────
 
 export class RefreshDto {
-  @ApiProperty({ description: 'A valid refresh token received at login' })
+  @ApiPropertyOptional({ description: 'Refresh token. Optional when sent as an httpOnly cookie.' })
+  @IsOptional()
   @IsString()
-  @MinLength(1, { message: 'refresh_token is required' })
-  refresh_token: string;
+  refresh_token?: string;
 }

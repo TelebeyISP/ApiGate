@@ -45,7 +45,7 @@ export default function DashboardPage() {
     }
   }, [api, user])
 
-  const activeSims = sims.filter(s => s.status === 'ACTIVE').length
+  const activeSims = sims.filter(s => s.status?.toLowerCase() === 'active').length
   const totalDataUsedGb = (sims.reduce((acc, s) => acc + s.dataUsedMb, 0) / 1024).toFixed(1)
   const totalAllowanceGb = (sims.reduce((acc, s) => acc + (s.plan?.dataLimitMb ?? 0), 0) / 1024).toFixed(0)
 

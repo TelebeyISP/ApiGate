@@ -6,6 +6,8 @@
     "dev": "docker compose -f telebey-platform/docker-compose.yml up -d && npx -y concurrently \"npm run dev --prefix telebey-platform/apps/telebey-web\" \"npm run dev --prefix telebey-platform/apps/telebey-dashboard\"",
     "stop": "docker compose -f telebey-platform/docker-compose.yml down",
     "infra": "docker compose -f telebey-platform/docker-compose.yml up -d",
+    "test:open5gs": "./scripts/test-open5gs-apigate.sh",
+    "stack": "./scripts/dev-stack.sh",
     "clean": "docker compose -f telebey-platform/docker-compose.yml down -v"
   }
 }

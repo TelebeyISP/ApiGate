@@ -7,7 +7,7 @@ import {
   Home, 
   Settings, 
   ShieldCheck, 
-  SimToken, 
+  Radio,
   Smartphone, 
   Wifi 
 } from "lucide-react"
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils"
 const navigation = [
   { name: 'Overview', href: '/dashboard', icon: Home },
   { name: 'SIM Management', href: '/sim', icon: Smartphone },
+  { name: 'Open5GS Network', href: '/network', icon: Radio },
   { name: 'Data Plans', href: '/plans', icon: Wifi },
   { name: 'Usage Analytics', href: '/usage', icon: BarChart3 },
   { name: 'Verification', href: '/verify', icon: ShieldCheck },
