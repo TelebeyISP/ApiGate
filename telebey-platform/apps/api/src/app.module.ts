@@ -43,9 +43,11 @@ import { Usage } from './usage/entities/usage.entity';
         url: config.get<string>('DATABASE_URL'),
         host: config.get<string>('DB_HOST', 'localhost'),
         port: config.get<number>('DB_PORT', 5432),
-        username: config.get<string>('DB_USER', 'telebey_user'),
+        username:
+          config.get<string>('DB_USERNAME') ??
+          config.get<string>('DB_USER', 'telebey_user'),
         password: config.get<string>('DB_PASSWORD', 'telebey_pass'),
-        database: config.get<string>('DB_NAME', 'telebey'),
+        database: config.get<string>('DB_NAME', 'telebey_db'),
         entities: [User, Session, AuditLog, Sim, Plan, Subscription, Payment, Usage],
         autoLoadEntities: true,
         synchronize: true, // Disable in production (use migrations)

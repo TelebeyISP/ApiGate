@@ -164,17 +164,29 @@ export class AuthService {
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
 
+  async getProfile(userId: string) {
+    const user = await this.users.findOne({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('User not found');
+    return {
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      created_at: user.createdAt,
+    };
+  }
+
   private async issueTokens(userId: string, email: string): Promise<TokenPair> {
     const jti = uuidv4();
 
     const [access_token, refresh_token] = await Promise.all([
       this.jwt.signAsync(
         { sub: userId, email, jti },
-        { secret: this.config.get<string>('JWT_ACCESS_SECRET'), expiresIn: '15m' },
+        { secret: this.config.get<string>('JWT_ACCESS_SECRET', 'dev_access_secret_change_me'), expiresIn: '15m' },
       ),
       this.jwt.signAsync(
         { sub: userId, email },
-        { secret: this.config.get<string>('JWT_REFRESH_SECRET'), expiresIn: '7d' },
+        { secret: this.config.get<string>('JWT_REFRESH_SECRET', 'dev_refresh_secret_change_me'), expiresIn: '7d' },
       ),
     ]);
 

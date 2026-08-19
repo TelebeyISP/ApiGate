@@ -3,16 +3,13 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+ARG NEXT_PUBLIC_API_URL=http://localhost:4000
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
-# Install dependencies
+COPY package*.json ./
 RUN npm install
 
-# Copy source code
 COPY . .
-
-# Build the application
 RUN npm run build
 
 # Stage 2: Production

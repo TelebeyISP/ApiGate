@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, API_BASE_URL } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 import { AxiosInstance } from 'axios';
 
@@ -42,9 +42,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshAccessToken = useCallback(async (): Promise<string | null> => {
     try {
       // The refresh_token is sent automatically as an httpOnly cookie
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {
+      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
         method: 'POST',
-        credentials: 'include', // sends cookies
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
       });
 
       if (!res.ok) {
@@ -55,6 +57,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json() as { access_token: string };
       setAccessToken(data.access_token);
       scheduleTokenRefresh(data.access_token);
+
+      const meRes = await fetch(`${API_BASE_URL}/auth/me`, {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${data.access_token}` },
+      });
+      if (meRes.ok) {
+        const profile = await meRes.json() as AuthUser;
+        setUser(profile);
+      }
+
       return data.access_token;
     } catch {
       clearAuth();

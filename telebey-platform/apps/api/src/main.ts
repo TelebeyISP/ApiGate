@@ -10,8 +10,13 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  const corsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:5173'],
+    origin: corsOrigins,
     credentials: true,
   });
   
@@ -35,7 +40,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 4000;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
   console.log(`Swagger Docs available at: http://localhost:${port}/api/docs`);

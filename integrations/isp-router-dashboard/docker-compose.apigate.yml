@@ -1,0 +1,7 @@
+services:
+  webui:
+    environment:
+      APIGATE_URL: ${APIGATE_URL:-http://host.docker.internal:4000}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-open5gs_webui_jwt_dev}
+      SECRET_KEY: ${SECRET_KEY:-open5gs_webui_session_dev}
+      BIND_ADDRESS: 0.0.0.0
